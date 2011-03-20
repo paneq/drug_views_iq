@@ -26,9 +26,8 @@
 
     <table>
       <tr>
-        <th>Post.human_attribute_name(:title) </th>
-        <th>Post.human_attribute_name(:body)  </th>
-        <th>Post.human_attribute_name(:author)</th>
+        <th><%= Post.human_attribute_name(:title) %></th>
+        <th><%= Post.human_attribute_name(:body) %> </th>
       </tr>
 
     <% @posts.each do |post| %>
@@ -87,4 +86,34 @@
         redirect_to(posts_url)
       end
     end
+
+!SLIDE
+
+* Pierwsza zmiana
+* Niech nasz model będzie w namespace "Cms"
+* Ile trzeba będzie zmienić w widokach i kontrolerze ?
+
+!SLIDE
+
+* Kontroler - 7 linii
+* Widok - 2 linie (tyle ile razy human_attribute_name by znać tytuł nagłówka dla tabelki)
+* Widok & Kontroller - 9 linii - przestał działać routing... (undefined method `cms_post_path')
+
+!SLIDE code smaller
+# posts_controller.rb
+    @@@
+    -    @post = Cms::Post.new(params[:post])
+    +    @post = Cms::Post.new(params[:cms_post])
+
+
+    -      redirect_to(@post)
+    +      redirect_to( post_url(@post) )
+
+    -<%= render 'form' %>
+    +<%= form_for(@post, :url => post_path(@post) ) do |f| %>
+    +  <%= render :partial => 'form', :locals => {:f => f} %>
+    +<% end %>
+
+    -<%= link_to 'Show', @post %> |
+    +<%= link_to 'Show', post_path(@post) %> |
 
