@@ -117,3 +117,129 @@
     -<%= link_to 'Show', @post %> |
     +<%= link_to 'Show', post_path(@post) %> |
 
+!SLIDE bullets
+
+* Druga zmiana
+* Niech nasz kontroler będzie w namespace "Admin"
+* Ile trzeba będzie zmienić w widokach i kontrolerze ?
+
+!SLIDE bullets
+
+* 14 linii pasujących do wyrażenia /.*post.*(_url|_path)/
+* Gdybybm chciał zrobić by całość działała jako podresource wewnątrz :users i tylko widzieć
+wiadomości danego autora też musiałbym zmienić mniej więcej tyle linii kodu i wszędzie do generatorów
+urli podstawić dodatkowy parametr @user. Niefajnie...
+
+
+!SLIDE bullets small
+# Co jest zatem problemem w naszych widokach zwykle ?
+* duża wrażliwość kodu na zmiany namespace. Zarówno modelu, kontrolera jak i routingu.
+* w domyślnym scaffoldzie jest bardzo dużo powtórzeń
+* w domyślnym scaffoldzie po niektórych zmianach część rzeczy kodu je odwzoruje np formularze będą generować :cms_post
+a część kodu "nie nadąży za tą zmianą".
+*
+
+!SLIDE bullets
+# Co jest największym problem ?
+* Routing
+* bardzo fajny
+* bardzo konfigurowalny, elastyczny
+* mogę mieć 2 ścieżki pod jeden kontroler
+* mogę mieć 2 kontrolery pod jedną ścieżką (w zależności od constraint'ów)
+* ale w 95% przypadków jest to proste mapowanie 1-1 bez zbędnych gadżetów...
+
+!SLIDE small center
+# Jak to dawniej bywało ?
+# Rails 1 anybody ?
+    @@@ Ruby
+    link_to 'Show',
+    :action => :show,
+    :id => post.id
+
+!SLIDE small center
+# Rails 1
+# zagnieżdżone resource'y
+    @@@ Ruby
+    link_to 'Show',
+    :action => :show,
+    :user_id => post.author_id,
+    :id => post.id
+
+!SLIDE bullets
+# Problemy ?
+* Komu by się chciało to pisać ?
+* Wciąż mnóstwo powtórzeń, każdy link scope'owany względem nadrzędnego resource'u
+* Czemu mój widok miałoby to w ogóle obchodzić ?
+
+!SLIDE bullets
+# Co jest największym marzeniem ?
+* Gdybym mógł jak w Rails 1 powiedzieć, że chcę dostać się do tej akcji (bo tak o tym myślę i nie obchodzi mnie cały ten routingowy narzut)
+* Gdybym nie musiał się powtarzać
+
+!SLIDE bullets
+# Open source pozwala spełniać marzenia :-)
+* Ale to co pokaże później jeszcze nie jest open :-(
+
+!SLIDE bullets
+
+* Załóżmy, że mamy jakiś bardziej złożony kontroler, w którym mogę sterować czy na layoucie
+mam coś wyświetlać czy nie. Niech w naszym przykładzie będzie to kalendarz który pozwala mi
+zobaczyć w jakie dni coś napisałem na blogasku i ewentualnie przejść w to miejsce.
+Nie będziemy tego szczegółowo implementować. Jedyne co mnie interesuje to ustawianie
+poszczególnych zmiennych potrzebnych kalendarzowi do odrysowania się.
+Powiedzmy, że potrzebuje on miesiąc i rok znać by zadziałać.
+
+!SLIDE small
+# Kontroler
+    @@@ Ruby
+    module Admin
+      class PostsController < ApplicationController
+
+        before_filter :setup_calendar
+
+        ...
+
+        private
+
+        def setup_calendar
+          @calendar = rand > 0.5 # Czytanie z params albo session albo z ustawień ...
+          if @calendar
+            @year = (params[:year] || Date.today.year).to_i
+            @month = (params[:month] || Date.today.month).to_i
+            @count = @year / @month
+          end
+        end
+
+      end
+    end
+
+!SLIDE smaller code
+# Layout
+    @@@ Ruby
+    <% if @calendar %>
+      <div class="calendar">
+        W miesiącu <%= @year %> - <%= @month %> napisano
+        <%= @count %> wiadomości
+
+        <%= link_to "Poprzedni miesiąc",
+        admin_posts_path(:year => @year, :month => @month - 1)  %>
+
+        <%= link_to "Następny miesiąc",
+        admin_posts_path(:year => @year, :month => @month + 1)  %>
+
+      </div>
+    <% end %>
+
+!SLIDE bullets
+# Co tutaj jest problematyczne ?
+* Powtórzenie logiki ustawiania i korzystania ze zmiennych
+* Musze w kontrolerze naprzód wiedzieć co zostanie użyte i to ustawić
+* kombinacji takich możliwości może być dużo (w przykładzie były tylko dwie)
+
+
+!SLIDE
+# Must refactor!
+
+!SLIDE bullets
+# Co tutaj jest problematyczne ?
+* https://github.com/voxdolo/decent_exposure is your friend
